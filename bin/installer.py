@@ -148,7 +148,19 @@ class Installer():
     def _install_service(self):
         """ Install SCUTUM service
         """
-        if os.path.isdir('/etc/init.d/'):
+        if os.path.isdir('/usr/lib/systemd'):
+            """
+            This is for the old-fashion systemds. In old (maybe I'm wrong)
+            systemds, unit files are created manually. They are stored in
+            /usr/lib/systemd/system/ folder. systemctl command will look
+            for service files in that folder.
+            """
+            shutil.copyfile(self.INSTALL_DIR + '/res/scutum.service', '/usr/lib/systemd/system/scutum.service')
+            if os.path.islink('/etc/systemd/system/multi-user.target.wants/scutum.service'):
+                # Let's just remove it in case of program structure update.
+                os.remove('/etc/systemd/system/multi-user.target.wants/scutum.service')
+            Utilities.execute(['ln', '-s', '/usr/lib/systemd/system/scutum.service', '/etc/systemd/system/multi-user.target.wants/scutum.service'])
+        elif os.path.isdir('/etc/init.d/'):
             """
             This is for debian-based systems. On debian, only an executable
             script/file is needed. This file is usually in /etc/inid.d/ and
@@ -161,19 +173,6 @@ class Installer():
             # runlevels are now defined in the executable files in newer versions
             # of systemd. Keeping this line for older systems
             Utilities.execute(['update-rc.d', 'scutum', 'start', '10', '2', '3', '4', '5', '.', 'stop', '90', '0', '1', '6', '.'])
-        elif os.path.isdir('/usr/lib/systemd'):
-            """
-            This is for the old-fashion systemds. In old (maybe I'm wrong)
-            systemds, unit files are created manually. They are stored in
-            /usr/lib/systemd/system/ folder. systemctl command will look
-            for service files in that folder.
-            """
-            shutil.copyfile(self.INSTALL_DIR + '/res/scutum.service', '/usr/lib/systemd/system/scutum.service')
-            if os.path.islink('/etc/systemd/system/multi-user.target.wants/scutum.service'):
-                # Let's just remove it in case of program structure update.
-                os.remove('/etc/systemd/system/multi-user.target.wants/scutum.service')
-            Utilities.execute(['ln', '-s', '/usr/lib/systemd/system/scutum.service', '/etc/systemd/system/multi-user.target.wants/scutum.service'])
-
         # Enable service
         Utilities.execute(['systemctl', 'enable', 'scutum'])
         Utilities.execute(['systemctl', 'start', 'scutum'])
